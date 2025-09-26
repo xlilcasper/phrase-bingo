@@ -28,6 +28,7 @@ export function renderAll() {
     renderLists();
     renderBingoCalls();
     renderPlayers();
+    renderAutoPlayButton();
 }
 
 export function renderSeedDate() {
@@ -61,6 +62,10 @@ export function renderCard() {
         const key = phrase.normalize("NFC");
         const isFree = key === "FREE";
 
+        // wrapper for animation
+        const wrapper = document.createElement("div");
+        wrapper.className = "tile-anim";
+
         const tile = document.createElement("div");
         tile.className = "tile shadow text-sm";
         tile.dataset.index = String(idx);
@@ -83,15 +88,17 @@ export function renderCard() {
                 // Update ONLY this tile
                 applyTileClasses(tile, key, idx);
 
-                // Combined pop + wiggle (single animation so transforms don't fight)
-                tile.classList.remove("tile-pop-wiggle");
-                // force reflow to restart animation
+                // Wiggle the WRAPPER so it composes with tile:hover/active
+                wrapper.classList.remove("tile-wiggle");
+                // force reflow
                 // eslint-disable-next-line no-unused-expressions
-                tile.offsetWidth;
-                tile.classList.add("tile-pop-wiggle");
+                wrapper.offsetWidth;
+                wrapper.classList.add("tile-wiggle");
             });
         }
-        dom.cardGrid.appendChild(tile);
+
+        wrapper.appendChild(tile);
+        dom.cardGrid.appendChild(wrapper);
     });
 
     state.initialCardRendered = true;
@@ -114,7 +121,7 @@ export function renderLists() {
         btn.className = "text-xs px-2 py-1 border rounded border-green-700 text-green-800 hover:bg-green-100 transition ripple";
         btn.textContent = "Uncall";
         btn.addEventListener("click", (ev) => {
-            spawnRipple(ev, btn); // keep ripple on buttons
+            spawnRipple(ev, btn);
             state.socket.emit("phrase:uncall", { phrase: p.normalize("NFC") });
         });
         row.append(label, btn);
