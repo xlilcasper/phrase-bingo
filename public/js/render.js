@@ -48,61 +48,78 @@ export function applyTileClasses(tile, key, idx) {
     if (state.myWinningIndices.has(idx)) tile.classList.add("winning");
 }
 
+// render.js
 export function renderCard() {
-    dom.cardGrid.innerHTML = "";
+    // If card isn't buildable, keep your existing warning path
     if (state.cardPhrases.length !== 25) {
+        dom.cardGrid.innerHTML = "";
         const warn = document.createElement("div");
         warn.className = "p-4 bg-amber-50 border border-amber-200 rounded-xl";
         warn.textContent = "Need at least 25 unique phrases in phrases.txt to build a card.";
         dom.cardGrid.appendChild(warn);
+        state.initialCardRendered = false;
         return;
     }
 
+    const alreadyBuilt = state.initialCardRendered &&
+        dom.cardGrid.querySelectorAll(".tile").length === 25;
+
+    if (!alreadyBuilt) {
+        // BUILD ONCE
+        dom.cardGrid.innerHTML = "";
+
+        state.cardPhrases.forEach((phrase, idx) => {
+            const key = phrase.normalize("NFC");
+            const isFree = key === "FREE";
+
+            const wrapper = document.createElement("div");
+            wrapper.className = "tile-anim";
+
+            const tile = document.createElement("div");
+            // FIX: only add "free" class when it is actually the FREE tile
+            tile.className = "tile shadow text-sm" + (isFree ? " free" : "");
+            tile.dataset.index = String(idx);
+            tile.innerHTML = isFree
+                ? `<div class="free"><span class="free-label">FREE</span></div>`
+                : `<div>${phrase}</div>`;
+
+            if (state.initialCardRendered) tile.style.animation = "none";
+            else tile.style.animationDelay = `${(idx % 5) * 20 + Math.floor(idx / 5) * 20}ms`;
+
+            applyTileClasses(tile, key, idx);
+
+            if (!isFree) {
+                tile.style.cursor = "pointer";
+                tile.title = "Toggle your personal mark (does not call)";
+                tile.addEventListener("click", () => {
+                    if (state.localMarked.has(key)) state.localMarked.delete(key);
+                    else state.localMarked.add(key);
+                    storage.saveMarks();
+
+                    applyTileClasses(tile, key, idx);
+
+                    wrapper.classList.remove("tile-wiggle");
+                    wrapper.offsetWidth; // reflow
+                    wrapper.classList.add("tile-wiggle");
+                });
+            }
+
+            wrapper.appendChild(tile);
+            dom.cardGrid.appendChild(wrapper);
+        });
+
+        state.initialCardRendered = true;
+        return; // done with initial build
+    }
+
+    // UPDATE MODE (no rebuild): just apply classes so transitions can run
     state.cardPhrases.forEach((phrase, idx) => {
         const key = phrase.normalize("NFC");
-        const isFree = key === "FREE";
-
-        // wrapper for animation
-        const wrapper = document.createElement("div");
-        wrapper.className = "tile-anim";
-
-        const tile = document.createElement("div");
-        tile.className = "tile shadow text-sm";
-        tile.dataset.index = String(idx);
-        tile.innerHTML = `<div class="${isFree ? "free" : ""}">${isFree ? "FREE" : phrase}</div>`;
-
-        if (state.initialCardRendered) tile.style.animation = "none";
-        else tile.style.animationDelay = `${(idx % 5) * 20 + Math.floor(idx / 5) * 20}ms`;
-
-        applyTileClasses(tile, key, idx);
-
-        if (!isFree) {
-            tile.style.cursor = "pointer";
-            tile.title = "Toggle your personal mark (does not call)";
-            tile.addEventListener("click", () => {
-                // Toggle mark
-                if (state.localMarked.has(key)) state.localMarked.delete(key);
-                else state.localMarked.add(key);
-                storage.saveMarks();
-
-                // Update ONLY this tile
-                applyTileClasses(tile, key, idx);
-
-                // Wiggle the WRAPPER so it composes with tile:hover/active
-                wrapper.classList.remove("tile-wiggle");
-                // force reflow
-                // eslint-disable-next-line no-unused-expressions
-                wrapper.offsetWidth;
-                wrapper.classList.add("tile-wiggle");
-            });
-        }
-
-        wrapper.appendChild(tile);
-        dom.cardGrid.appendChild(wrapper);
+        const tile = dom.cardGrid.querySelector(`.tile[data-index="${idx}"]`);
+        if (tile) applyTileClasses(tile, key, idx);
     });
-
-    state.initialCardRendered = true;
 }
+
 
 export function renderLists() {
     dom.calledList.innerHTML = "";
