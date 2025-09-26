@@ -1,0 +1,54 @@
+/* Card tile (roomier) */
+.tile {
+  background: #fff;           /* default white background */
+  user-select: none;
+  transition: transform 0.05s ease, background 0.1s ease, box-shadow 0.1s ease, color 0.1s ease;
+  border-radius: 0.9rem;
+  padding: 0.85rem;
+  min-height: 92px;           /* larger tiles on desktop */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.2;
+  word-break: break-word;
+}
+@media (max-width: 1024px) {
+  .tile { min-height: 76px; }
+}
+.tile:active { transform: scale(0.98); }
+
+/* State fills */
+.tile.marked { background: #fde68a; }          /* yellow */
+.tile.called-marked { background: #86efac; }   /* green */
+.tile.called-unmarked { background: #fca5a5; } /* red */
+
+/* Winning line outline */
+.winning { box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.9); }
+
+/* Pills for Players */
+.players-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+  background: #f1f5f9; /* slate-100 */
+  border: 1px solid #cbd5e1; /* slate-300 */
+  font-size: 0.8rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Small chips for lists */
+.chip {
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid #cbd5e1; /* slate-300 */
+  font-size: 0.75rem;
+}
