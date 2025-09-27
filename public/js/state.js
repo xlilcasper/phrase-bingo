@@ -13,6 +13,7 @@ export const state = {
     myWinningIndices: new Set(),
     lastWinTimestamp: 0,
     initialCardRendered: false,
+    alreadyCalledBingo: false, // used for glow gating
 };
 
 // We'll bind these AFTER the DOM is ready
@@ -32,6 +33,10 @@ export const dom = {
     callBingoBtn: null,
     autoPlayBtn: null,
     clearCardBtn: null,
+    resetGameBtn: null,        // NEW
+    resetConfirmModal: null,   // NEW
+    cancelResetBtn: null,      // NEW
+    confirmResetBtn: null,     // NEW
     confettiCanvas: null,
     confettiCtx: null,
 };
@@ -53,6 +58,10 @@ export function initDom() {
     dom.callBingoBtn = document.getElementById("callBingoBtn");
     dom.autoPlayBtn = document.getElementById("autoPlayBtn");
     dom.clearCardBtn = document.getElementById("clearCardBtn");
+    dom.resetGameBtn = document.getElementById("resetGameBtn");              // NEW
+    dom.resetConfirmModal = document.getElementById("resetConfirmModal");    // NEW
+    dom.cancelResetBtn = document.getElementById("cancelResetBtn");          // NEW
+    dom.confirmResetBtn = document.getElementById("confirmResetBtn");        // NEW
     dom.confettiCanvas = document.getElementById("confetti");
     dom.confettiCtx = dom.confettiCanvas ? dom.confettiCanvas.getContext("2d") : null;
 
@@ -60,7 +69,8 @@ export function initDom() {
     const required = [
         "loginPanel","loginForm","displayName","mainPanel","whoami","card",
         "seedDate","calledList","availableList","bingoCalls","playersList",
-        "switchUser","callBingoBtn","autoPlayBtn","clearCardBtn","confetti"
+        "switchUser","callBingoBtn","autoPlayBtn","clearCardBtn","confetti",
+        "resetGameBtn","resetConfirmModal","cancelResetBtn","confirmResetBtn" // NEW
     ];
     const missing = required.filter(id => !document.getElementById(id));
     if (missing.length) {

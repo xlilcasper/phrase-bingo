@@ -4,6 +4,21 @@ import { connectSocket } from "./socket.js";
 import { renderAll, renderAutoPlayButton, applyTileClasses, renderCallBingoGlow, renderLists } from "./render.js";
 import { spawnRipple } from "./ripple.js";
 
+// Build the same card again using the existing daily seed + name
+async function rebuildCardWithSameSeed() {
+    if (!state.roundKey || state.phrases.length < 25) {
+        state.cardPhrases = [];
+        return;
+    }
+    const { shuffleDeterministic } = await import("./rng.js");
+    const first25 = shuffleDeterministic(
+        state.phrases,
+        `${state.name || "guest"}|${state.roundKey}`
+    ).slice(0, 25);
+    first25[12] = "FREE";
+    state.cardPhrases = first25.map(s => s.normalize("NFC"));
+}
+
 function showLogin() {
     dom.loginPanel.classList.remove("hidden");
     dom.mainPanel.classList.add("hidden");
@@ -38,15 +53,7 @@ async function initialLoad() {
     state.initialCardRendered = false;
     state.alreadyCalledBingo = false;
 
-    // Build card once; socket.js will rebuild on updates
-    if (state.roundKey && state.phrases.length >= 25) {
-        const { shuffleDeterministic } = await import("./rng.js");
-        const first25 = shuffleDeterministic(state.phrases, `${state.name || "guest"}|${state.roundKey}`).slice(0,25);
-        first25[12] = "FREE";
-        state.cardPhrases = first25.map(s => s.normalize("NFC"));
-    } else {
-        state.cardPhrases = [];
-    }
+    await rebuildCardWithSameSeed();
 
     if (storage.getAutoPlay()) {
         for (const phr of state.cardPhrases) {
@@ -56,6 +63,23 @@ async function initialLoad() {
     }
 
     renderAll();
+}
+
+function localResetGame() {
+    // Clear all per-game state locally (keep roundKey the same)
+    state.called = new Set();               // nothing is called now
+    state.bingoCalls = [];                  // clear calls list
+    state.localMarked.clear();              // clear marks
+    state.myWinningIndices = new Set();     // clear win highlight
+    state.lastWinTimestamp = 0;
+    state.alreadyCalledBingo = false;       // stop button glow
+    storage.setAutoCalled(false);
+    storage.saveMarks();
+
+    // Re-render everything immediately
+    renderAll();
+    renderCallBingoGlow();
+    renderLists(); // keep Available highlighting/order in sync
 }
 
 // Wire UI events (run after DOM is ready)
@@ -79,12 +103,8 @@ function wireUi() {
     dom.callBingoBtn.addEventListener("click", (ev) => {
         spawnRipple(ev, dom.callBingoBtn);
         if (!state.name) return alert("Please enter a name first.");
-
-        // Tell server
         state.socket.emit("bingo:call", { name: state.name });
-
-        // Stop glowing immediately on this client
-        state.alreadyCalledBingo = true;
+        state.alreadyCalledBingo = true;    // stop glowing immediately
         renderCallBingoGlow();
     });
 
@@ -101,7 +121,6 @@ function wireUi() {
                 applyTileClasses(tile, key, idx);
             });
         }
-        // Keep Available list in sync (highlight + ordering)
         renderLists();
         storage.saveMarks();
     });
@@ -110,7 +129,7 @@ function wireUi() {
         spawnRipple(ev, dom.clearCardBtn);
         state.localMarked.clear();
         state.myWinningIndices = new Set();
-        state.alreadyCalledBingo = false;   // reset the bingo flag
+        state.alreadyCalledBingo = false;
         if (storage.getAutoPlay()) {
             storage.setAutoPlay(false);
             renderAutoPlayButton();
@@ -124,12 +143,68 @@ function wireUi() {
             applyTileClasses(tile, key, idx);
         });
 
-        // also refresh glow state so button updates immediately
-        import("./render.js").then(m => m.renderCallBingoGlow());
-
-        // reflect list state too
+        renderCallBingoGlow();
         renderLists();
     });
+
+    // ---- Reset Game (Hold to Confirm) ----
+    wireResetGame();
+}
+
+// Hold-to-confirm reset modal logic
+function wireResetGame() {
+    const modal = dom.resetConfirmModal;
+    const resetBtn = dom.resetGameBtn;
+    const cancelBtn = dom.cancelResetBtn;
+    const confirmBtn = dom.confirmResetBtn;
+
+    let holdTimer = null;
+    let holding = false;
+
+    function openModal() {
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        cancelBtn.focus({ preventScroll: true });
+    }
+    function closeModal() {
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+        stopHold();
+    }
+    function startHold() {
+        if (holding) return;
+        holding = true;
+        confirmBtn.classList.add("holding");
+        holdTimer = setTimeout(async () => {
+            // 1) Rebuild the SAME card (same daily seed)
+            await rebuildCardWithSameSeed();
+            // 2) Reset locally (immediate UX)
+            localResetGame();
+            // 3) Notify server (optional; no server change required for local UX)
+            if (state.socket) state.socket.emit("game:reset");
+            // 4) Close modal
+            closeModal();
+        }, 2200); // 2.2s
+    }
+    function stopHold() {
+        holding = false;
+        confirmBtn.classList.remove("holding");
+        if (holdTimer) {
+            clearTimeout(holdTimer);
+            holdTimer = null;
+        }
+    }
+
+    resetBtn.addEventListener("click", openModal);
+    cancelBtn.addEventListener("click", closeModal);
+
+    // Pointer + touch support
+    confirmBtn.addEventListener("mousedown", startHold);
+    confirmBtn.addEventListener("mouseup", stopHold);
+    confirmBtn.addEventListener("mouseleave", stopHold);
+
+    confirmBtn.addEventListener("touchstart", (e) => { e.preventDefault(); startHold(); }, { passive: false });
+    ["touchend","touchcancel"].forEach(ev => confirmBtn.addEventListener(ev, stopHold));
 }
 
 // Boot once DOM is ready so all IDs exist

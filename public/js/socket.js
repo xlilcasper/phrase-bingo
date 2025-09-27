@@ -17,6 +17,7 @@ export function connectSocket() {
         renderAll();
     });
 
+    // ===== Standard phrase/call updates =====
     state.socket.on("phrases:update", ({ phrases, called, roundKey }) => {
         state.phrases = phrases.map((s) => s.normalize("NFC"));
         state.called = new Set((called || []).map((s) => s.normalize("NFC")));
@@ -36,13 +37,12 @@ export function connectSocket() {
 
         if (storage.getAutoPlay()) {
             autoMarkCalled();
-            tryAutoCallBingo(); // will set flag + glow off when it fires
+            tryAutoCallBingo(); // will set flag + turn glow off when it fires
         }
 
         renderAll();
     });
 
-    // Full bingo calls list update
     state.socket.on("bingo:update", ({ calls }) => {
         state.bingoCalls = (calls || []).slice().sort((a, b) => a.time - b.time);
 
@@ -64,6 +64,36 @@ export function connectSocket() {
 
         renderBingoCalls();
         renderCard();
+    });
+
+    // ===== NEW: Apply reset without changing roundKey =====
+    // Works with the server Option A (single event)
+    state.socket.on("game:reset:apply", ({ roundKey, phrases, called = [], calls = [] } = {}) => {
+        // Keep roundKey as-is (server sends the same one)
+        if (roundKey) state.roundKey = roundKey;
+
+        // Replace phrase list if server sent it (safe no-op if same list)
+        if (Array.isArray(phrases) && phrases.length) {
+            state.phrases = phrases.map(s => s.normalize("NFC"));
+        }
+
+        // Clear everything related to the current game state
+        state.called = new Set((called || []).map(s => s.normalize("NFC"))); // should be empty
+        state.bingoCalls = calls || [];                                       // should be empty
+        state.localMarked.clear();                                            // clear local marks
+        storage.saveMarks();                                                  // persist the clear
+
+        state.myWinningIndices = new Set();
+        state.lastWinTimestamp = 0;
+        state.alreadyCalledBingo = false;
+        storage.setAutoCalled(false);
+
+        // Rebuild card with the SAME roundKey (daily seed) and phrases
+        ensureCard();
+
+        // Fresh render & ensure glow off
+        renderAll();
+        renderCallBingoGlow();
     });
 
     // Optional: single-call event from server (if your backend emits one)
@@ -110,7 +140,7 @@ function tryAutoCallBingo() {
     if (res.ok) {
         state.socket.emit("bingo:call", { name: state.name });
         storage.setAutoCalled(true);
-        // Also stop the glow on this client for auto-call
+        // Stop the glow on this client for auto-call
         state.alreadyCalledBingo = true;
         renderCallBingoGlow();
     }

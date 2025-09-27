@@ -21,9 +21,9 @@
         </div>
         <p class="text-sm text-slate-500 mb-4">Enter a display name (no account needed).</p>
         <form id="loginForm" class="space-y-3">
-            <input id="displayName" type="text" required maxlength="40"
-                   placeholder="Your name"
-                   class="w-full border rounded-xl px-4 py-2 focus:outline-none focus:ring focus:ring-indigo-200 transition" />
+            <label for="displayName"></label><input id="displayName" type="text" required maxlength="40"
+                                                    placeholder="Your name"
+                                                    class="w-full border rounded-xl px-4 py-2 focus:outline-none focus:ring focus:ring-indigo-200 transition"/>
             <button class="w-full bg-indigo-600 text-white rounded-xl py-2 hover:bg-indigo-700 transition active:scale-[.99] ripple">
                 Enter
             </button>
@@ -69,11 +69,12 @@
                         <button id="callBingoBtn" class="btn-primary ripple">Call Bingo</button>
                         <button id="autoPlayBtn" class="btn-outline ripple">Auto Play: OFF</button>
                         <button id="clearCardBtn" class="btn-danger ripple">Clear Card</button>
+                        <button id="resetGameBtn" class="btn-danger ripple">Reset Game</button>
                         <span class="text-xs text-slate-500 flex items-center gap-2">
-                <span class="legend legend-yellow"></span> you marked
-                <span class="legend legend-green"></span> called + marked
-                <span class="legend legend-red"></span> called (not marked)
-              </span>
+                            <span class="legend legend-yellow"></span> you marked
+                            <span class="legend legend-green"></span> called + marked
+                            <span class="legend legend-red"></span> called (not marked)
+                        </span>
                     </div>
                 </div>
             </main>
@@ -95,12 +96,30 @@
     </div>
 </div>
 
+<!-- Reset confirm modal -->
+<div id="resetConfirmModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="resetConfirmTitle">
+    <div class="bg-white rounded-xl shadow-xl p-6 w-80">
+        <h2 id="resetConfirmTitle" class="font-semibold text-lg mb-3">Reset Game?</h2>
+        <p class="text-sm text-slate-600 mb-4">This will reset the game for <b>ALL</b> players. Hold the button below to confirm.</p>
+        <div class="flex justify-end gap-2">
+            <button id="cancelResetBtn" class="btn-outline">Cancel</button>
+            <button id="confirmResetBtn" class="btn-danger hold-btn" aria-label="Hold to confirm reset">Hold to Confirm</button>
+        </div>
+    </div>
+</div>
+
 <!-- Confetti canvas -->
 <canvas id="confetti" class="pointer-events-none fixed inset-0 w-full h-full hidden"></canvas>
 
 <!-- socket.io (global) -->
-<script src="/socket.io/socket.io.js"></script>
-<!-- Module entrypoint (make sure this exact path exists) -->
+<script>
+    const script = document.createElement('script');
+    script.src = '/socket.io/socket.io.js';
+    script.onload = () => console.log('Socket.io loaded successfully.');
+    script.onerror = () => console.error('Failed to load Socket.io. Please check the server.');
+    document.head.appendChild(script);
+</script>
+<!-- Module entrypoint -->
 <script type="module" src="/js/main.js"></script>
 </body>
 </html>
