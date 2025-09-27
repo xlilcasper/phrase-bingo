@@ -29,6 +29,7 @@ export function renderAll() {
     renderBingoCalls();
     renderPlayers();
     renderAutoPlayButton();
+    renderCallBingoGlow();
 }
 
 export function renderSeedDate() {
@@ -210,4 +211,20 @@ export function renderAutoPlayButton() {
     const on = storage.getAutoPlay();
     dom.autoPlayBtn.textContent = `Auto Play: ${on ? "ON" : "OFF"}`;
     dom.autoPlayBtn.className = "btn-outline ripple " + (on ? "ring-2 ring-emerald-200" : "");
+}
+
+state.alreadyCalledBingo = state.alreadyCalledBingo ?? false;
+
+export function renderCallBingoGlow() {
+    const { ok } = hasBingoLocally();
+    const shouldGlow = ok && !state.alreadyCalledBingo;
+    if (dom.callBingoBtn) dom.callBingoBtn.classList.toggle("btn-glow", shouldGlow);
+}
+
+if (dom.callBingoBtn) {
+    dom.callBingoBtn.addEventListener("click", () => {
+        state.alreadyCalledBingo = true;
+        renderCallBingoGlow();
+        state.socket.emit("bingo:call", { name: state.myName, time: Date.now() });
+    });
 }

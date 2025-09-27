@@ -182,3 +182,30 @@ body { -webkit-tap-highlight-color: transparent; }
 
 /* Confetti canvas on top (used by confetti.js) */
 #confetti { z-index: 60; }
+
+/* Glow when a bingo is available */
+.btn-glow {
+    position: relative;                 /* ensure it paints on top */
+    z-index: 1;
+    animation: bingo-glow 1.2s ease-in-out infinite alternate;
+}
+
+/* add a spread ring so the glow is obvious on white backgrounds */
+@keyframes bingo-glow {
+    from {
+        box-shadow:
+                0 0 0 rgba(16,185,129,0),       /* blur */
+                0 0 0 0 rgba(16,185,129,0);     /* spread ring */
+        transform: none;
+    }
+    to {
+        box-shadow:
+                0 0 28px rgba(16,185,129,.55),  /* blur glow */
+                0 0 0 6px rgba(16,185,129,.28); /* soft outer ring */
+        transform: translateY(-1px);
+    }
+}
+
+/* keep this so the glow isn’t clipped by the ripple container */
+.ripple.btn-glow { overflow: visible; }
+
