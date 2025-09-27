@@ -49,9 +49,7 @@ export function applyTileClasses(tile, key, idx) {
     if (state.myWinningIndices.has(idx)) tile.classList.add("winning");
 }
 
-// render.js
 export function renderCard() {
-    // If card isn't buildable, keep your existing warning path
     if (state.cardPhrases.length !== 25) {
         dom.cardGrid.innerHTML = "";
         const warn = document.createElement("div");
@@ -66,7 +64,6 @@ export function renderCard() {
         dom.cardGrid.querySelectorAll(".tile").length === 25;
 
     if (!alreadyBuilt) {
-        // BUILD ONCE
         dom.cardGrid.innerHTML = "";
 
         state.cardPhrases.forEach((phrase, idx) => {
@@ -77,7 +74,6 @@ export function renderCard() {
             wrapper.className = "tile-anim";
 
             const tile = document.createElement("div");
-            // FIX: only add "free" class when it is actually the FREE tile
             tile.className = "tile shadow text-sm" + (isFree ? " free" : "");
             tile.dataset.index = String(idx);
             tile.innerHTML = isFree
@@ -99,8 +95,14 @@ export function renderCard() {
 
                     applyTileClasses(tile, key, idx);
 
+                    // keep side lists synced (highlight + ordering)
+                    renderLists();
+
+                    // wiggle the wrapper
                     wrapper.classList.remove("tile-wiggle");
-                    wrapper.offsetWidth; // reflow
+                    // reflow
+                    // eslint-disable-next-line no-unused-expressions
+                    wrapper.offsetWidth;
                     wrapper.classList.add("tile-wiggle");
                 });
             }
@@ -110,10 +112,10 @@ export function renderCard() {
         });
 
         state.initialCardRendered = true;
-        return; // done with initial build
+        return;
     }
 
-    // UPDATE MODE (no rebuild): just apply classes so transitions can run
+    // UPDATE MODE: just re-apply classes
     state.cardPhrases.forEach((phrase, idx) => {
         const key = phrase.normalize("NFC");
         const tile = dom.cardGrid.querySelector(`.tile[data-index="${idx}"]`);
@@ -121,13 +123,20 @@ export function renderCard() {
     });
 }
 
-
 export function renderLists() {
     dom.calledList.innerHTML = "";
     dom.availableList.innerHTML = "";
 
     const calledArr = state.phrases.filter((p) => state.called.has(p));
-    const availArr = state.phrases.filter((p) => !state.called.has(p));
+    let availArr = state.phrases.filter((p) => !state.called.has(p));
+
+    const indexMap = new Map(state.phrases.map((p, i) => [p, i]));
+    availArr.sort((a, b) => {
+        const ma = state.localMarked.has(a) ? 1 : 0;
+        const mb = state.localMarked.has(b) ? 1 : 0;
+        if (ma !== mb) return mb - ma; // marked first
+        return indexMap.get(a) - indexMap.get(b); // stable by original order
+    });
 
     // Called
     calledArr.forEach((p) => {
@@ -146,10 +155,13 @@ export function renderLists() {
         dom.calledList.appendChild(row);
     });
 
-    // Available
+    // Available (locally-marked first)
     availArr.forEach((p) => {
+        const isMarkedLocally = state.localMarked.has(p);
         const row = document.createElement("div");
-        row.className = "list-row flex items-center justify-between p-2 rounded-xl border bg-white border-slate-200 hover:bg-slate-50 transition";
+        row.className =
+            "list-row flex items-center justify-between p-2 rounded-xl border bg-white border-slate-200 hover:bg-slate-50 transition" +
+            (isMarkedLocally ? " avail-marked" : "");
         const label = document.createElement("div");
         label.className = "text-sm"; label.textContent = p;
         const btn = document.createElement("button");
@@ -221,10 +233,11 @@ export function renderCallBingoGlow() {
     if (dom.callBingoBtn) dom.callBingoBtn.classList.toggle("btn-glow", shouldGlow);
 }
 
+// Keep this listener (harmless alongside main.js), but fix name + flag
 if (dom.callBingoBtn) {
     dom.callBingoBtn.addEventListener("click", () => {
-        state.alreadyCalledBingo = true;
+        state.alreadyCalledBingo = true;        // stop glowing immediately
         renderCallBingoGlow();
-        state.socket.emit("bingo:call", { name: state.myName, time: Date.now() });
+        state.socket.emit("bingo:call", { name: state.name, time: Date.now() });
     });
 }

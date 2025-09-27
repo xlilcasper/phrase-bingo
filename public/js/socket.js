@@ -1,5 +1,5 @@
 ﻿import { state, storage } from "./state.js";
-import { renderAll, renderBingoCalls, renderCard } from "./render.js";
+import { renderAll, renderBingoCalls, renderCard, renderCallBingoGlow } from "./render.js";
 import { launchConfetti } from "./confetti.js";
 
 export function connectSocket() {
@@ -21,6 +21,7 @@ export function connectSocket() {
         state.phrases = phrases.map((s) => s.normalize("NFC"));
         state.called = new Set((called || []).map((s) => s.normalize("NFC")));
 
+        // New round → reset per-round flags
         if (roundKey && roundKey !== state.roundKey) {
             state.roundKey = roundKey;
             storage.loadMarks();
@@ -28,18 +29,24 @@ export function connectSocket() {
             storage.setAutoCalled(false);
             state.lastWinTimestamp = 0;
             state.initialCardRendered = false;
+            state.alreadyCalledBingo = false; // allow glow next time we have a bingo
         }
+
         ensureCard();
+
         if (storage.getAutoPlay()) {
             autoMarkCalled();
-            tryAutoCallBingo();
+            tryAutoCallBingo(); // will set flag + glow off when it fires
         }
+
         renderAll();
     });
 
+    // Full bingo calls list update
     state.socket.on("bingo:update", ({ calls }) => {
         state.bingoCalls = (calls || []).slice().sort((a, b) => a.time - b.time);
 
+        // If we have a (valid) call in the list, save indices and celebrate
         const entry = state.bingoCalls.filter(c => c.name === state.name && c.valid).pop();
         const prevHadWin = state.myWinningIndices.size > 0;
         if (entry && Array.isArray(entry.indices)) {
@@ -48,11 +55,23 @@ export function connectSocket() {
                 state.lastWinTimestamp = entry.time || Date.now();
                 launchConfetti(900);
             }
+            // We’ve called (and it’s valid) → ensure glow is off
+            state.alreadyCalledBingo = true;
+            renderCallBingoGlow();
         } else {
             state.myWinningIndices = new Set();
         }
+
         renderBingoCalls();
         renderCard();
+    });
+
+    // Optional: single-call event from server (if your backend emits one)
+    state.socket.on("bingo:called", (payload = {}) => {
+        if (payload.name === state.name) {
+            state.alreadyCalledBingo = true;
+            renderCallBingoGlow();
+        }
     });
 }
 
@@ -91,5 +110,8 @@ function tryAutoCallBingo() {
     if (res.ok) {
         state.socket.emit("bingo:call", { name: state.name });
         storage.setAutoCalled(true);
+        // Also stop the glow on this client for auto-call
+        state.alreadyCalledBingo = true;
+        renderCallBingoGlow();
     }
 }

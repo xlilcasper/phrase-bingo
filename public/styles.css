@@ -102,7 +102,7 @@ body { -webkit-tap-highlight-color: transparent; }
 
 /* FREE tile pizzazz */
 .tile .free {
-    font-weight: 800; color: #111827;
+    font-weight: 800;
     font-style: italic; color: #334155;
     position: relative;
 }
@@ -149,12 +149,18 @@ body { -webkit-tap-highlight-color: transparent; }
     .tile .free::before { animation: none; }
 }
 
-
 /* Your state colors */
 .tile.marked{ background-color:#fde68a; border-color:#A5F3FC; box-shadow:0 8px 22px -8px rgba(14,165,233,.35) }
 .tile.called-unmarked{ background-color:#fca5a5; color:#0F172A; border-color: #CBD5E1 }
 .tile.called-marked{ background-color:#86efac; border-color:#86EFAC; box-shadow:0 8px 22px -8px rgba(16,185,129,.35) }
 .tile.winning{ outline:3px solid #34D399 }
+
+/* ===== Highlight locally-marked phrases in the Available list ===== */
+#availableList .list-row.avail-marked{
+    background-color:#fde68a;            /* same yellow as .tile.marked */
+    border-color:#A5F3FC;                /* match the slight teal accent you used */
+    box-shadow:0 8px 22px -8px rgba(14,165,233,.20);
+}
 
 /* ========== Animations ========== */
 /* Wiggle: rotate the WRAPPER so it composes with tile:hover/active */
@@ -208,4 +214,3 @@ body { -webkit-tap-highlight-color: transparent; }
 
 /* keep this so the glow isn’t clipped by the ripple container */
 .ripple.btn-glow { overflow: visible; }
-
