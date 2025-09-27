@@ -8,6 +8,15 @@ body { -webkit-tap-highlight-color: transparent; }
 footer { position: relative; z-index: 1; }
 #leaf-layer { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
 
+/* Fall theme for bingo card panel */
+#card {
+    background: linear-gradient(135deg, #fffaf0, #fef3c7); /* warm ivory → soft amber */
+    padding: 1rem;
+    border-radius: 1rem;
+    border: 1px solid #fcd34d; /* amber-300 */
+    box-shadow: 0 4px 14px -4px rgba(202, 138, 4, 0.35);
+}
+
 
 /* ========== Panels ========== */
 .panel {
