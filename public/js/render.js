@@ -29,6 +29,7 @@ export function renderAll() {
     renderBingoCalls();
     renderPlayers();
     renderAutoPlayButton();
+    renderCallBingoGlow();
 }
 
 export function renderSeedDate() {
@@ -49,59 +50,77 @@ export function applyTileClasses(tile, key, idx) {
 }
 
 export function renderCard() {
-    dom.cardGrid.innerHTML = "";
     if (state.cardPhrases.length !== 25) {
+        dom.cardGrid.innerHTML = "";
         const warn = document.createElement("div");
         warn.className = "p-4 bg-amber-50 border border-amber-200 rounded-xl";
         warn.textContent = "Need at least 25 unique phrases in phrases.txt to build a card.";
         dom.cardGrid.appendChild(warn);
+        state.initialCardRendered = false;
         return;
     }
 
+    const alreadyBuilt = state.initialCardRendered &&
+        dom.cardGrid.querySelectorAll(".tile").length === 25;
+
+    if (!alreadyBuilt) {
+        dom.cardGrid.innerHTML = "";
+
+        state.cardPhrases.forEach((phrase, idx) => {
+            const key = phrase.normalize("NFC");
+            const isFree = key === "FREE";
+
+            const wrapper = document.createElement("div");
+            wrapper.className = "tile-anim";
+
+            const tile = document.createElement("div");
+            tile.className = "tile shadow text-sm" + (isFree ? " free" : "");
+            tile.dataset.index = String(idx);
+            tile.innerHTML = isFree
+                ? `<div class="free"><span class="free-label">FREE</span></div>`
+                : `<div>${phrase}</div>`;
+
+            if (state.initialCardRendered) tile.style.animation = "none";
+            else tile.style.animationDelay = `${(idx % 5) * 20 + Math.floor(idx / 5) * 20}ms`;
+
+            applyTileClasses(tile, key, idx);
+
+            if (!isFree) {
+                tile.style.cursor = "pointer";
+                tile.title = "Toggle your personal mark (does not call)";
+                tile.addEventListener("click", () => {
+                    if (state.localMarked.has(key)) state.localMarked.delete(key);
+                    else state.localMarked.add(key);
+                    storage.saveMarks();
+
+                    applyTileClasses(tile, key, idx);
+
+                    // keep side lists synced (highlight + ordering)
+                    renderLists();
+
+                    // wiggle the wrapper
+                    wrapper.classList.remove("tile-wiggle");
+                    // reflow
+                    // eslint-disable-next-line no-unused-expressions
+                    wrapper.offsetWidth;
+                    wrapper.classList.add("tile-wiggle");
+                });
+            }
+
+            wrapper.appendChild(tile);
+            dom.cardGrid.appendChild(wrapper);
+        });
+
+        state.initialCardRendered = true;
+        return;
+    }
+
+    // UPDATE MODE: just re-apply classes
     state.cardPhrases.forEach((phrase, idx) => {
         const key = phrase.normalize("NFC");
-        const isFree = key === "FREE";
-
-        // wrapper for animation
-        const wrapper = document.createElement("div");
-        wrapper.className = "tile-anim";
-
-        const tile = document.createElement("div");
-        tile.className = "tile shadow text-sm";
-        tile.dataset.index = String(idx);
-        tile.innerHTML = `<div class="${isFree ? "free" : ""}">${isFree ? "FREE" : phrase}</div>`;
-
-        if (state.initialCardRendered) tile.style.animation = "none";
-        else tile.style.animationDelay = `${(idx % 5) * 20 + Math.floor(idx / 5) * 20}ms`;
-
-        applyTileClasses(tile, key, idx);
-
-        if (!isFree) {
-            tile.style.cursor = "pointer";
-            tile.title = "Toggle your personal mark (does not call)";
-            tile.addEventListener("click", () => {
-                // Toggle mark
-                if (state.localMarked.has(key)) state.localMarked.delete(key);
-                else state.localMarked.add(key);
-                storage.saveMarks();
-
-                // Update ONLY this tile
-                applyTileClasses(tile, key, idx);
-
-                // Wiggle the WRAPPER so it composes with tile:hover/active
-                wrapper.classList.remove("tile-wiggle");
-                // force reflow
-                // eslint-disable-next-line no-unused-expressions
-                wrapper.offsetWidth;
-                wrapper.classList.add("tile-wiggle");
-            });
-        }
-
-        wrapper.appendChild(tile);
-        dom.cardGrid.appendChild(wrapper);
+        const tile = dom.cardGrid.querySelector(`.tile[data-index="${idx}"]`);
+        if (tile) applyTileClasses(tile, key, idx);
     });
-
-    state.initialCardRendered = true;
 }
 
 export function renderLists() {
@@ -109,7 +128,15 @@ export function renderLists() {
     dom.availableList.innerHTML = "";
 
     const calledArr = state.phrases.filter((p) => state.called.has(p));
-    const availArr = state.phrases.filter((p) => !state.called.has(p));
+    let availArr = state.phrases.filter((p) => !state.called.has(p));
+
+    const indexMap = new Map(state.phrases.map((p, i) => [p, i]));
+    availArr.sort((a, b) => {
+        const ma = state.localMarked.has(a) ? 1 : 0;
+        const mb = state.localMarked.has(b) ? 1 : 0;
+        if (ma !== mb) return mb - ma; // marked first
+        return indexMap.get(a) - indexMap.get(b); // stable by original order
+    });
 
     // Called
     calledArr.forEach((p) => {
@@ -128,10 +155,13 @@ export function renderLists() {
         dom.calledList.appendChild(row);
     });
 
-    // Available
+    // Available (locally-marked first)
     availArr.forEach((p) => {
+        const isMarkedLocally = state.localMarked.has(p);
         const row = document.createElement("div");
-        row.className = "list-row flex items-center justify-between p-2 rounded-xl border bg-white border-slate-200 hover:bg-slate-50 transition";
+        row.className =
+            "list-row flex items-center justify-between p-2 rounded-xl border bg-white border-slate-200 hover:bg-slate-50 transition" +
+            (isMarkedLocally ? " avail-marked" : "");
         const label = document.createElement("div");
         label.className = "text-sm"; label.textContent = p;
         const btn = document.createElement("button");
@@ -193,4 +223,21 @@ export function renderAutoPlayButton() {
     const on = storage.getAutoPlay();
     dom.autoPlayBtn.textContent = `Auto Play: ${on ? "ON" : "OFF"}`;
     dom.autoPlayBtn.className = "btn-outline ripple " + (on ? "ring-2 ring-emerald-200" : "");
+}
+
+state.alreadyCalledBingo = state.alreadyCalledBingo ?? false;
+
+export function renderCallBingoGlow() {
+    const { ok } = hasBingoLocally();
+    const shouldGlow = ok && !state.alreadyCalledBingo;
+    if (dom.callBingoBtn) dom.callBingoBtn.classList.toggle("btn-glow", shouldGlow);
+}
+
+// Keep this listener (harmless alongside main.js), but fix name + flag
+if (dom.callBingoBtn) {
+    dom.callBingoBtn.addEventListener("click", () => {
+        state.alreadyCalledBingo = true;        // stop glowing immediately
+        renderCallBingoGlow();
+        state.socket.emit("bingo:call", { name: state.name, time: Date.now() });
+    });
 }
