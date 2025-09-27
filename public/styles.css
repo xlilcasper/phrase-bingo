@@ -3,6 +3,12 @@
 body { -webkit-tap-highlight-color: transparent; }
 .animate-fade-in { animation: fade-in .25s ease both; }
 
+/* Layering so seasonal effects stay behind the UI */
+#app { position: relative; z-index: 1; }
+footer { position: relative; z-index: 1; }
+#leaf-layer { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+
+
 /* ========== Panels ========== */
 .panel {
     background: rgba(255,255,255,0.9);
@@ -223,4 +229,83 @@ body { -webkit-tap-highlight-color: transparent; }
 .hold-btn.holding::after {
     width: 100%;
     transition-duration: 2.2s;
+}
+/* ===== Random Falling Leaves (non-uniform, layered transforms) ===== */
+#leaf-layer{
+    position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;
+}
+
+/* Wrapper handles vertical fall (translateY only) */
+.leaf{
+    position:absolute; top:-12vh; left:var(--left, 0);
+    width:var(--size, 24px); height:var(--size,24px);
+    opacity:var(--opacity,.75);
+    filter:drop-shadow(0 2px 2px rgba(0,0,0,.15));
+    will-change:transform;
+    animation: leaf-fall var(--fall,42s) linear var(--delay,0s) infinite;
+    color: #f59e0b;
+}
+
+/* Middle wrapper handles horizontal sway (translateX only) */
+.leaf .sway{
+    width:100%; height:100%;
+    will-change:transform;
+    animation: leaf-sway var(--sway,8s) ease-in-out var(--delay,0s) infinite;
+}
+
+/* Sprite paints with currentColor using a mask (works everywhere) */
+.leaf .sprite{
+    width: 100%;
+    height: 100%;
+    background-color: currentColor;     /* the paint */
+    will-change: transform;
+    animation: leaf-spin var(--spin,14s) linear var(--delay,0s) infinite;
+
+    /* default no mask to avoid FOUC while classes apply */
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-position: center;
+    mask-position: center;
+}
+
+/* Masks per shape (color comes from parent via currentColor) */
+.leaf.type-1 .sprite{
+    -webkit-mask-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M14 28c8-14 24-20 34-10-2 10-8 18-20 22 2 6 1 12-4 18-6-4-10-10-10-16 0-6 0-10 0-14z'/></svg>");
+    mask-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M14 28c8-14 24-20 34-10-2 10-8 18-20 22 2 6 1 12-4 18-6-4-10-10-10-16 0-6 0-10 0-14z'/></svg>");
+}
+.leaf.type-2 .sprite{
+    -webkit-mask-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M32 8l6 10 12-4-6 12 10 6-12 2 2 12-10-8-10 8 2-12-12-2 10-6-6-12 12 4z'/></svg>");
+    mask-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M32 8l6 10 12-4-6 12 10 6-12 2 2 12-10-8-10 8 2-12-12-2 10-6-6-12 12 4z'/></svg>");
+}
+.leaf.type-3 .sprite{
+    -webkit-mask-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M10 36c10-6 18-6 28 0 8 4 14 14 10 22-10 2-18 0-24-6-6-4-10-10-14-16z'/></svg>");
+    mask-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M10 36c10-6 18-6 28 0 8 4 14 14 10 22-10 2-18 0-24-6-6-4-10-10-14-16z'/></svg>");
+}
+
+/* Autumn palette */
+.leaf.color-1{ color:#f59e0b; } /* amber */
+.leaf.color-2{ color:#d97706; } /* orange */
+.leaf.color-3{ color:#ef4444; } /* red */
+.leaf.color-4{ color:#8b5e34; } /* brown */
+.leaf.color-5{ color:#fbbf24; } /* golden */
+
+/* Animations */
+@keyframes leaf-fall { to { transform: translateY(118vh); } }
+@keyframes leaf-sway {
+    0%,100%{ transform: translateX(calc(-1 * var(--swayAmp,28px))); }
+    50%    { transform: translateX(var(--swayAmp,28px)); }
+}
+@keyframes leaf-spin { to { transform: rotate(360deg); } }
+
+/* Motion sensitivity */
+@media (prefers-reduced-motion: reduce){
+    #leaf-layer{ display:none; }
 }
