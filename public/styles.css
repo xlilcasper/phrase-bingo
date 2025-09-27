@@ -42,6 +42,19 @@ footer { position: relative; z-index: 1; }
 }
 @media (min-width: 640px) { .chip-hidden { display: inline-flex; } }
 
+/* Sidebar panels: soft fall cream */
+.panel--sidebar{
+    background: #fef9c3;     /* amber-100 */
+    border-color: #fcd34d;   /* amber-300 */
+}
+
+/* Called + Available panels: soft sky blue */
+.panel--info {
+    background: #e0f2fe;     /* sky-100 */
+    border-color: #bae6fd;   /* sky-200 */
+}
+
+
 /* ========== Buttons ========== */
 .btn-primary {
     padding: .5rem .75rem; border-radius: .75rem;
