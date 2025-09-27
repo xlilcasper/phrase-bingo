@@ -11,7 +11,9 @@
     <!-- Tiny inline favicon to avoid 404s -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='64' width='64' viewBox='0 0 64 64'%3E%3Crect rx='12' ry='12' width='64' height='64' fill='%23596aff'/%3E%3Ctext x='50%25' y='56%25' text-anchor='middle' font-size='36' fill='white'%3EB%3C/text%3E%3C/svg%3E" />
 </head>
-<body class="bg-gradient-to-br from-slate-50 via-indigo-50 to-sky-50 text-slate-900 min-h-screen">
+<body class="bg-gradient-to-br from-purple-200 via-indigo-300 to-sky-200 text-slate-900 min-h-screen theme-fall">
+
+
 <div id="app" class="min-h-screen">
     <!-- Login -->
     <div id="loginPanel" class="max-w-md mx-auto mt-24 p-6 bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-slate-200 animate-fade-in">
@@ -45,11 +47,11 @@
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
             <!-- LEFT: Players + Bingo Calls -->
             <aside class="xl:col-span-3 space-y-4">
-                <section class="panel">
+                <section class="panel panel--sidebar">
                     <div class="panel-title">Players</div>
                     <div id="playersList" class="players-wrap max-h-[32rem] overflow-auto pr-1"></div>
                 </section>
-                <section class="panel">
+                <section class="panel panel--sidebar">
                     <div class="panel-title">Bingo Calls</div>
                     <div id="bingoCalls" class="space-y-2 max-h-[32rem] overflow-auto pr-1"></div>
                 </section>
@@ -82,11 +84,11 @@
             <!-- RIGHT: Called + Available -->
             <aside class="xl:col-span-4">
                 <div class="grid grid-cols-2 gap-4">
-                    <section class="panel ring-green-50 border-green-200">
+                    <section class="panel panel--called panel--info">
                         <div class="panel-title">Called</div>
                         <div id="calledList" class="space-y-1 max-h-[70vh] overflow-auto pr-1"></div>
                     </section>
-                    <section class="panel">
+                    <section class="panel panel--available panel--info">
                         <div class="panel-title">Available</div>
                         <div id="availableList" class="space-y-1 max-h-[70vh] overflow-auto"></div>
                     </section>
@@ -129,5 +131,13 @@
 </script>
 <!-- Module entrypoint -->
 <script type="module" src="/js/main.js"></script>
+
+<!-- Seasonal particles (behind UI) -->
+<div id="leaf-layer" aria-hidden="true"></div>
+
+<!-- Falling leaves (standalone file) -->
+<script src="/js/leaves.js" defer></script>
+
+
 </body>
 </html>
