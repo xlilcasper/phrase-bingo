@@ -454,3 +454,69 @@ if (name) {
 } else {
   showLogin();
 }
+
+
+
+//Group every 5 direct children of #card into <div class="mobile-row"> wrappers, so mobile users know which is a row of cards.
+(function () {
+  const card = document.getElementById("card");
+  if (!card) return;
+
+  //Avoid double-grouping
+  if (card.dataset.grouped === "true") return;
+
+  function groupNow() {
+    //If no element children yet or less than 25 cards items, call again.
+    if (card.children.length === 0 || card.children.length < 25) return;
+
+    const frag = document.createDocumentFragment();
+
+    //Drain the live HTMLCollection in chunks of 5
+    while (card.children.length > 0) {
+      const wrap = document.createElement("div");
+      wrap.className = "mobile-row";
+      for (let i = 0; i < 5 && card.children.length > 0; i++) {
+        wrap.appendChild(card.children[0]);
+      }
+      frag.appendChild(wrap);
+    }
+    card.appendChild(frag);
+    card.dataset.grouped = "true";
+  }
+  //Try to immediatly group just incase theyre present (Safety feature, they will be injected later)
+  groupNow();
+
+  //Tiles will be injected later, so watch for them to group.
+  if (card.dataset.grouped !== "true") {
+    let timer = null;
+    const mo = new MutationObserver(() => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        groupNow();
+        if (card.dataset.grouped === "true") mo.disconnect();
+      }, 50);
+    });
+    mo.observe(card, { childList: true });
+    //Try to load again (Safety again, they will already be injected here)
+    window.addEventListener("load", groupNow, { once: true });
+    //After BFCache restore on mobile Safari
+    window.addEventListener("pageshow", groupNow, { once: true });
+  }
+
+  //Watch for screen resizing (responsive layout)
+  let resizeTimer = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      //If we somehow ungrouped or layout changed, run again
+      if (card.dataset.grouped !== "true" && card.children.length >= 25) {
+        groupNow();
+      }
+    }, 200);//Slight debounce for smoother performance
+  });
+
+})();
+
+
+
+

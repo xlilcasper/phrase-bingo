@@ -52,3 +52,53 @@
   border: 1px solid #cbd5e1; /* slate-300 */
   font-size: 0.75rem;
 }
+
+
+.tile {
+  margin-bottom: 1rem;
+  min-height: 10rem;
+  transition: all 0.3s ease;
+}
+
+.tile:hover {
+box-shadow: 0 0 10px #bbbbbb, 0 0 20px #bbbbbb ;
+}
+
+/* Responsive CSS */
+@media only screen and (max-width: 769px) {
+  .margin-bottom {
+    margin-bottom: 1.5rem;
+  }
+  .mobile-row{
+    border: 1px solid #f4f4f4;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 1rem;
+    padding: 0.5rem 0rem;
+    background-color: #f4f4f4;
+  }
+  .mobile-row .tile {
+    width: 90%;
+    margin: auto;
+    margin-top: 0.6rem;
+    margin-bottom: 0.3rem;
+  }
+}
+@media only screen and (min-width: 770px) and (max-width: 1279px) {
+  .mobile-row{
+    border: 1px solid #f4f4f4;
+    margin-bottom: 1rem;
+    border-radius: 1rem;
+    padding: 0.5rem 0rem;
+    background-color: #f4f4f4;
+  }
+  .mobile-row:nth-child(odd) {
+    margin-right: 1rem;
+  }
+  .mobile-row .tile {
+    width: 90%;
+    margin: auto;
+    margin-top: 0.3rem;
+    margin-bottom: 0.3rem;
+  }
+}

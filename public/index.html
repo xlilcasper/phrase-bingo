@@ -24,7 +24,7 @@
     </div>
 
     <!-- Main -->
-    <div id="mainPanel" class="hidden max-w-7xl mx-auto p-4">
+    <div id="mainPanel" class="hidden mx-auto p-4">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-semibold">Welcome, <span id="whoami"></span></h2>
         <button id="switchUser" class="text-sm px-3 py-2 border rounded-xl hover:bg-slate-100">Switch</button>
@@ -50,7 +50,7 @@
             <h3 class="text-lg font-semibold">
               Your Card <span id="seedDate" class="text-sm font-normal text-slate-500"></span>
             </h3>
-            <div id="card" class="mt-3 grid grid-cols-5 gap-2"></div>
+            <div id="card" class="mt-3 grid xl:grid-cols-5 xl:gap-2 md:grid-cols-2 sm:grid-cols-1"></div>
 
             <div class="flex items-center gap-2 mt-4 flex-wrap">
               <button id="callBingoBtn"
@@ -72,8 +72,8 @@
 
         <!-- RIGHT: Called + Available -->
         <aside class="xl:col-span-4">
-          <div class="grid grid-cols-2 gap-4">
-            <section class="bg-white rounded-2xl border border-green-200 p-3">
+          <div class="grid xl:grid-cols-2 xl:gap-4 md:grid-cols-2 md:gap-4 sm:grid-cols-1">
+            <section class="bg-white rounded-2xl border border-green-200 p-3 margin-bottom">
               <h3 class="text-lg font-semibold mb-2">Called</h3>
               <div id="calledList" class="space-y-1 max-h-[70vh] overflow-auto pr-1"></div>
             </section>
